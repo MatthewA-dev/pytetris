@@ -1,5 +1,5 @@
 import time
-from random import choice
+from random import choice, randint
 import pygame
 import copy
 import os
@@ -28,7 +28,8 @@ class AI():
     bestmove = (math.inf, [0,0], piece) 
     #moves = []
     for _ in range(4):
-      pc = [0,0]
+      pc = self.board.defaultPieceCoords
+      #pc = [0,0]
     # get the furthest to the left coord that's valid for every piece rotation
       while(not self.board.checkOut(piece, pc)):
         pc = [pc[0] - 1, pc[1]]
@@ -123,7 +124,7 @@ class AI():
       dif += m - h
     
     #return (holecount, height, dif)
-    return holecount*2 + height + (d/5 * (20 / (height + 1)))
+    return holecount*2 + height + d/5
   def tick(self):
     if(time.time() - self.board.lastTime > self.board.fallspeed):
       move = self.getmove(self.board.piece)
@@ -152,7 +153,7 @@ class Score():
 
 
 class Board():
-  def __init__(self, x1, y1, x2, y2, blockx, blocky, surface, score):
+  def __init__(self, x1, y1, x2, y2, blockx, blocky, surface, score, hasAI):
     # non rendered part of board
     #blocky += 2
     # seconds for piece to fall 
@@ -162,15 +163,25 @@ class Board():
     self.surface = surface
     self.grid = [[0 for _ in range(blockx)] for _ in range(blocky)]
     self.lastTime = time.time()
-    self.piece = choice(p)
+    self.stack = copy.deepcopy(p)
+    self.piece = self.choiceRemove()
+    self.defaultPieceCoords = (((self.gridsize[0] - 1) // 2), 0)
     #self.piecestack = copy.deepcopy(p)
     #self.piece = p[1]
-    self.piececoords = [3,0]
+    self.piececoords = list(self.defaultPieceCoords)
     self.score = score
     self.level = 1
     self.linescleared = 0
     # required lines to pass level
     self.requiredlines = 10
+    self.hasAI = hasAI
+  
+  # Get piece and remove it from stack
+  def choiceRemove(self):
+    piece = self.stack.pop(randint(0,len(self.stack) - 1))
+    if(len(self.stack) == 0):
+      self.stack = copy.deepcopy(p)
+    return piece
 
   def shiftPiece(self, xshift):
     self.piececoords = (self.piececoords[0] + xshift, self.piececoords[1])
@@ -289,8 +300,19 @@ class Board():
           continue
       g[piececoords[1] + index] = r
     if(not returnBoard):
-      self.piececoords = (3,0)
-      self.piece = choice(p)
+      self.piececoords = self.defaultPieceCoords
+      self.piece = self.choiceRemove()
+      # Check for fail
+      if(self.checkOverlapping(piece=self.piece,piececoords=self.piececoords)):
+        print(f"Fallspeed: {self.fallspeed} seconds per tick")
+        print(f"Level: {self.level}")
+        #get score object
+        print(f"Score: {self.score.score}")
+        print(f"Lines Cleared: {self.linescleared} lines cleared")
+        print(f"Has AI: {self.hasAI}")
+        print("Grid: ")
+        print("\n".join([str(x) for x in self.grid]))
+        exit()
 
     # Check for a tetris
     tindexs = []
@@ -359,9 +381,9 @@ class Board():
 
 def main():
   display = pygame.display.set_mode([600,800])
-  board = Board(150, 100, 450, 700, 10, 20, display, Score(50,30,25,display))
-  ai = AI(board)
   hasAI = True
+  board = Board(150, 100, 450, 700, 10, 20, display, Score(50,30,25,display), hasAI)
+  ai = AI(board)
   run = True
   # game loop
   while run:
