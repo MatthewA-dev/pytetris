@@ -1,5 +1,5 @@
 import time
-from random import choice, randint
+from random import randint
 import pygame
 import copy
 import os
@@ -13,10 +13,14 @@ pieceFile = open("pieces.txt","r")
 pieces = pieceFile.read().split("\n;\n")
 pieceFile.close()
 p = []
-for piece in pieces:
-  piece = piece.split("\n")
-  tempiece = [[int(y) for y in x] for x in piece]
-  p.append(tempiece)
+color = []
+for i, piece in enumerate(pieces[::-1]):
+  if(i % 2 == 0):
+    color = [int(x) for x in piece.split(", ")]
+  else:
+    piece = piece.split("\n")
+    tempiece = [[color if (y != "0") else 0 for y in x] for x in piece]
+    p.append(tempiece)
 
 class AI():
   def __init__(self, board):
@@ -83,7 +87,7 @@ class AI():
     def getHeight(grid):
       height = 0 
       for row in grid:
-        if(len(set(row)) != 1):
+        if(len(set(1 if (r != 0) else 0 for r in row)) != 1):
           break
         else:
           height += 1
@@ -173,13 +177,14 @@ class Board():
     # non rendered part of board
     #blocky += 2
     # seconds for piece to fall 
-    self.fallspeed = 0.00000001
+    self.fallspeed = 0.5
     self.size = (x1,y1,x2,y2)
     self.gridsize = (blockx,blocky)
     self.surface = surface
     self.grid = [[0 for _ in range(blockx)] for _ in range(blocky)]
     self.lastTime = time.time()
     self.stack = copy.deepcopy(p)
+    self.color = (0,0,0)
     self.piece = self.choiceRemove()
     #self.piecestack = copy.deepcopy(p)
     #self.piece = p[1]
@@ -207,7 +212,7 @@ class Board():
     # Check if it's out of bounds
     for piecerow in self.piece:
         for xindex, pi in enumerate(piecerow):
-          if(pi == 1):
+          if(pi != 0):
             if(self.piececoords[0] + xindex > self.gridsize[0] - 1 or self.piececoords[0] + xindex < 0):
               self.piececoords = (self.piececoords[0] - xshift, self.piececoords[1])
     # Check if its overlapping
@@ -285,7 +290,7 @@ class Board():
   def checkOut(self, piece, piececoords):
     for yindex, piecerow in enumerate(piece):
         for xindex, pi in enumerate(piecerow):
-          if(pi == 1):
+          if(pi != 0):
             if(piececoords[0] + xindex > self.gridsize[0] - 1 or piececoords[0] + xindex < 0 or self.checkInGround(piece, piececoords) or piececoords[1] + yindex < 0):
               return True
     return False
@@ -296,7 +301,7 @@ class Board():
       if(inground):
         break
       for pi in piecerow:
-        if(pi == 1):
+        if(pi != 0):
           if(piececoords[1] + index > self.gridsize[1] - 1):
             inground = True
     return inground
@@ -378,17 +383,19 @@ class Board():
     self.score.render()
     tempGrid = self.overlapPiece()
     # Overlap piece coords with grid
-    BORDER = 2
-    pygame.draw.rect(self.surface, (0,0,0), pygame.Rect(self.size[0], self.size[1], self.size[2] - self.size[0] + BORDER, self.size[3] - self.size[1] + BORDER))
+    BORDER = 3
+    BOARDBORDER = 10
+    pygame.draw.rect(self.surface, (255,255,255), pygame.Rect(self.size[0] - BOARDBORDER, self.size[1] - BOARDBORDER, abs(self.size[2] - self.size[0]) + BOARDBORDER*2 + BORDER, abs(self.size[3] - self.size[1]) + BOARDBORDER*2 + BORDER))
+    pygame.draw.rect(self.surface, (25,25,25), pygame.Rect(self.size[0], self.size[1], self.size[2] - self.size[0] + BORDER, self.size[3] - self.size[1] + BORDER))
     for yindex, row in enumerate(tempGrid): # TODO remove top two: self.grid[2:]
       for xindex, block in enumerate(row):
         blocksx, blocksy = (self.size[2] - self.size[0]) // self.gridsize[0], (self.size[3] - self.size[1]) // (self.gridsize[1]) # TODO: subract two from gridsize[1] : gridsize[1] - 2
         # Adding one to add a border around the blocks
-        if(block == 1):
+        if(block != 0):
           #color = (255,25,0)
-          color = (110,110,110)
+          color = block
         else:
-          color = (255,255,255)
+          color = (0,0,0)
         pygame.draw.rect(self.surface, color, pygame.Rect(blocksx * xindex + BORDER + self.size[0], blocksy * yindex + BORDER + self.size[1], blocksx - BORDER, blocksy - BORDER))
 
   def tick(self):
@@ -409,7 +416,7 @@ class Board():
 
 def main():
   display = pygame.display.set_mode([600,800])
-  hasAI = True
+  hasAI = False
   board = Board(150, 100, 450, 700, 10, 20, display, Score(50,30,25,display), hasAI)
   ai = AI(board)
   run = True
