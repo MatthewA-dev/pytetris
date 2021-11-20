@@ -169,7 +169,7 @@ class Score():
     score = self.font.render("Score: " + str(self.score), True, (255,255,255))
     level = self.font.render("Level: " + str(self.level), True, (255,255,255))
     self.screen.blit(score, self.loc)
-    self.screen.blit(level, (50,60))
+    self.screen.blit(level, (50,50))
 
 
 class Board():
@@ -417,7 +417,7 @@ class Board():
 def main():
   display = pygame.display.set_mode([600,800])
   hasAI = False
-  board = Board(150, 100, 450, 700, 10, 20, display, Score(50,30,25,display), hasAI)
+  board = Board(150, 100, 450, 700, 10, 20, display, Score(50,20,25,display), hasAI)
   ai = AI(board)
   run = True
   # game loop
