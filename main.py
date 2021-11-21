@@ -1,9 +1,10 @@
 import time
-from random import randint
+from random import randint, setstate
 import pygame
 import copy
 import os
 import math
+import enum
 
 pygame.init()
 pygame.font.init()
@@ -173,7 +174,7 @@ class Score():
 
 
 class Board():
-  def __init__(self, x1, y1, x2, y2, blockx, blocky, surface, score, hasAI):
+  def __init__(self, x1, y1, x2, y2, blockx, blocky, surface, score, hasAI, leaveFunc):
     # non rendered part of board
     #blocky += 2
     # seconds for piece to fall 
@@ -195,6 +196,7 @@ class Board():
     # required lines to pass level
     self.requiredlines = 10
     self.hasAI = hasAI
+    self.leaveFunc = leaveFunc
   
   # Get piece coords for initial pos of piece
   def getPieceCoords(self,piece):
@@ -338,15 +340,16 @@ class Board():
       self.piececoords = self.getPieceCoords(self.piece)
       # Check for fail
       if(self.checkOverlapping(piece=self.piece,piececoords=self.piececoords, grid=self.grid)):
-        print(f"Fallspeed: {self.fallspeed} seconds per tick")
-        print(f"Level: {self.level}")
-        #get score object
-        print(f"Score: {self.score.score}")
-        print(f"Lines Cleared: {self.linescleared} lines cleared")
-        print(f"Has AI: {self.hasAI}")
-        print("Grid: ")
-        print("\n".join([str(x) for x in self.grid]))
-        exit()
+        self.leaveFunc()
+        # print(f"Fallspeed: {self.fallspeed} seconds per tick")
+        # print(f"Level: {self.level}")
+        # #get score object
+        # print(f"Score: {self.score.score}")
+        # print(f"Lines Cleared: {self.linescleared} lines cleared")
+        # print(f"Has AI: {self.hasAI}")
+        # print("Grid: ")
+        # print("\n".join([str(x) for x in self.grid]))
+        # exit()
 
     # Check for a tetris
     tindexs = []
@@ -377,7 +380,6 @@ class Board():
       return g
 
   def render(self):
-    self.surface.fill((0,0,0))
     score = pygame.font.Font('Minecraftia.ttf', 30).render("Grade: " + str(round(AI.evaluate(AI, self.grid, True),2)), True, (255,255,255))
     self.surface.blit(score, (50,750))
     self.score.render()
@@ -413,40 +415,103 @@ class Board():
           self.piececoords = (self.piececoords[0], self.piececoords[1] - 1)
           self.placePiece(False, self.piece, self.piececoords)
 
+class State(enum.Enum):
+  MAIN = 0
+  GAME = 1
+  LOSE = 2
+  PAUSED = 3
+class Game():
+  def __init__(self, display):
+    self.state = State.MAIN
+    self.display = display
+    self.hasAI = False
+    self.reset()
+  def setState(self, aiVal, state):
+    self.hasAI = aiVal
+    self.state = state
+  
+  def reset(self):
+    self.board = Board(150, 100, 450, 700, 10, 20, self.display, Score(50,20,25,self.display), self.hasAI, self.reset)
+    self.ai = AI(self.board)
+    self.setState(False, State.MAIN)
+
+  def gameloop(self):
+    logo = pygame.image.load("logofade.png")
+    logo = pygame.transform.scale(logo, (400, 250))
+    startButton = Button(loc = (150 ,350, 450, 450),color = (69,255,28), hovercolor=(55,170,32), bordersize=3, bordercolor=(255,255,255), func=self.setState, text = "START")
+    startAIButton = Button(loc = (150 ,500, 450, 700),color = (69,255,28), hovercolor=(55,170,32), bordersize=3, bordercolor=(255,255,255), func=self.setState, text = "START WITH AI")
+    while True:
+      self.display.fill((0,0,0))
+      if(self.state == State.GAME or self.state == State.LOSE):
+        # game loop
+        for event in pygame.event.get():
+          if event.type == pygame.QUIT:
+            pygame.quit()
+          elif event.type == pygame.KEYDOWN:
+            if(self.state != State.LOSE):
+              if(not self.hasAI):
+                if pygame.key.get_pressed()[pygame.K_LEFT]:
+                  self.board.shiftPiece(-1)
+                if pygame.key.get_pressed()[pygame.K_RIGHT]:
+                  self.board.shiftPiece(1)
+                if pygame.key.get_pressed()[pygame.K_z]:
+                  self.board.rotatePiece("LEFT", self.board.piece, False)
+                if pygame.key.get_pressed()[pygame.K_x]:
+                  self.board.rotatePiece("RIGHT", self.board.piece, False)
+                if pygame.key.get_pressed()[pygame.K_DOWN]:
+                  #HARDDROP
+                  while not self.board.checkOverlapping(self.board.piece,self.board.piececoords, self.board.grid) and not self.board.checkInGround(self.board.piece, self.board.piececoords):
+                    self.board.piececoords = (self.board.piececoords[0], self.board.piececoords[1] + 1)
+                  self.board.piececoords = (self.board.piececoords[0], self.board.piececoords[1] - 1)
+                  self.board.placePiece(False, self.board.piece, self.board.piececoords)
+                if pygame.key.get_pressed()[pygame.K_ESCAPE]:
+                  pygame.quit()
+        if(self.hasAI):
+          self.ai.tick()
+        self.board.tick()
+        self.board.render()
+  
+      elif(self.state == State.MAIN):
+        for event in pygame.event.get():
+          if event.type == pygame.QUIT:
+            pygame.quit()
+          elif event.type == pygame.MOUSEBUTTONDOWN:
+            if startButton.isHovering(pygame.mouse.get_pos()):
+              startButton.func(False, State.GAME)
+            elif startAIButton.isHovering(pygame.mouse.get_pos()):
+              startAIButton.func(True, State.GAME)
+        # Render stuff
+        startButton.render(self.display, pygame.mouse.get_pos())
+        startAIButton.render(self.display, pygame.mouse.get_pos())
+        self.display.blit(logo,(100,50))
+      pygame.display.flip()
+
+class Button:
+  def __init__(self, loc, color, hovercolor, bordersize, bordercolor, func, text):
+    self.loc = loc
+    self.color = color
+    self.hovercolor = hovercolor
+    self.bordersize = bordersize
+    self.bordercolor = bordercolor
+    self.func = func
+    self.text = text
+  def render(self, surface, mousepos):
+    color = self.color
+    if(self.isHovering(mousepos)):
+      color = self.hovercolor
+    pygame.draw.rect(surface, (255,255,255), pygame.Rect(self.loc[0] - self.bordersize, self.loc[1] - self.bordersize, abs(self.loc[2] - self.loc[0]) + self.bordersize*2, abs(self.loc[3] - self.loc[1]) + self.bordersize*2),border_radius=10)
+    r = pygame.Rect(self.loc[0], self.loc[1], (self.loc[2] - self.loc[0]), (self.loc[3] - self.loc[1]))
+    pygame.draw.rect(surface=surface,color=color,rect = r,border_radius=10)
+  def isHovering(self, mousepos):
+    if(mousepos[0] > self.loc[0] and mousepos[0] < self.loc[2] and mousepos[1] > self.loc[1] and mousepos[1] < self.loc[3]):
+      return True
+    return False
 
 def main():
   display = pygame.display.set_mode([600,800])
-  hasAI = False
-  board = Board(150, 100, 450, 700, 10, 20, display, Score(50,20,25,display), hasAI)
-  ai = AI(board)
-  run = True
-  # game loop
-  while run:
-    for event in pygame.event.get():
-      if event.type == pygame.QUIT:
-        run = False
-      elif event.type == pygame.KEYDOWN:
-        if(not hasAI):
-          if pygame.key.get_pressed()[pygame.K_LEFT]:
-            board.shiftPiece(-1)
-          if pygame.key.get_pressed()[pygame.K_RIGHT]:
-            board.shiftPiece(1)
-          if pygame.key.get_pressed()[pygame.K_z]:
-            board.rotatePiece("LEFT", board.piece, False)
-          if pygame.key.get_pressed()[pygame.K_x]:
-            board.rotatePiece("RIGHT", board.piece, False)
-          if pygame.key.get_pressed()[pygame.K_DOWN]:
-            #HARDDROP
-            while not board.checkOverlapping(board.piece,board.piececoords, board.grid) and not board.checkInGround(board.piece, board.piececoords):
-              board.piececoords = (board.piececoords[0], board.piececoords[1] + 1)
-            board.piececoords = (board.piececoords[0], board.piececoords[1] - 1)
-            board.placePiece(False, board.piece, board.piececoords)
-    if(hasAI):
-      ai.tick()
-    board.tick()
-    board.render()
-    pygame.display.flip()
-  pygame.quit()
+  game = Game(display=display)
+  game.gameloop()
+  
 
 if( __name__ == "__main__"):
   main()
