@@ -6,7 +6,7 @@ class Label:
       self.textcolor = textcolor
       self.textsize = textsize
       self.text = text
-      self.font = pygame.font.Font('Minecraftia.ttf', 20)
+      self.font = pygame.font.Font('assets/Minecraftia.ttf', 20)
       self.display = display
     def render(self):
 
@@ -27,7 +27,7 @@ class Button:
     self.textsize = textsize
     self.func = func
     self.text = text
-    self.font = pygame.font.Font('Minecraftia.ttf', 20)
+    self.font = pygame.font.Font('assets/Minecraftia.ttf', 20)
     self.display = display
   
   def render(self):

@@ -7,7 +7,7 @@ from random import randint
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 # load pieces
-pieceFile = open("pieces.txt","r")
+pieceFile = open("assets/pieces.txt","r")
 pieces = pieceFile.read().split("\n;\n")
 pieceFile.close()
 p = []
@@ -156,7 +156,7 @@ class AI():
 class Score():
   def __init__(self,x1, y1, size, screen):
     self.loc = (x1,y1)
-    self.font = pygame.font.Font('Minecraftia.ttf', size)
+    self.font = pygame.font.Font('assets/Minecraftia.ttf', size)
     self.score = 0
     self.screen = screen
     self.level = 1
@@ -375,7 +375,7 @@ class Board():
       return g
 
   def render(self):
-    score = pygame.font.Font('Minecraftia.ttf', 30).render("Grade: " + str(round(AI.evaluate(AI, self.grid, True),2)), True, (255,255,255))
+    score = pygame.font.Font('assets/Minecraftia.ttf', 30).render("Grade: " + str(round(AI.evaluate(AI, self.grid, True),2)), True, (255,255,255))
     self.surface.blit(score, (50,750))
     self.score.render()
     tempGrid = self.overlapPiece()

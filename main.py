@@ -22,12 +22,12 @@ class Game():
     self.display = display
     self.hasAI = False
     self.reset()
-    self.font = pygame.font.Font('Minecraftia.ttf', 20)
+    self.font = pygame.font.Font('assets/Minecraftia.ttf', 20)
 
     btemplate = Button(display = self.display, loc = (200 ,350, 400, 400),color = (0,0,0), hovercolor=(50,50,50), bordersize=3, bordercolor=(255,255,255), func=self.setState, text = "START", textcolor=(255,255,255), textsize=20)
     # Main menu assets
 
-    self.logo = pygame.image.load("logo.png")
+    self.logo = pygame.image.load("assets/logo.png")
     self.logo = pygame.transform.scale(self.logo, (400, 250))
 
     self.startButton = copy.copy(btemplate)
