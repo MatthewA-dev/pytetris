@@ -2,7 +2,7 @@ import pygame
 import copy
 import enum
 from game import Board, AI, Score
-from rendering import Button, Label
+from rendering import Button, Label, InputBox
 
 pygame.init()
 pygame.font.init()
@@ -18,13 +18,13 @@ class State(enum.Enum):
 
 class Game():
   def __init__(self, display):
-    self.state = State.MAIN
     self.display = display
     self.hasAI = False
     self.reset()
+    self.state = State.MAIN
     self.font = pygame.font.Font('assets/Minecraftia.ttf', 20)
 
-    btemplate = Button(display = self.display, loc = (200 ,350, 400, 400),color = (0,0,0), hovercolor=(50,50,50), bordersize=3, bordercolor=(255,255,255), func=self.setState, text = "START", textcolor=(255,255,255), textsize=20)
+    btemplate = Button(display = self.display, loc = (200 ,350, 200, 50),color = (0,0,0), hovercolor=(50,50,50), bordersize=3, bordercolor=(255,255,255), func=self.setState, text = "START", textcolor=(255,255,255), textsize=20)
     # Main menu assets
 
     self.logo = pygame.image.load("assets/logo.png")
@@ -32,26 +32,35 @@ class Game():
 
     self.startButton = copy.copy(btemplate)
     self.startButton.text = "START"
-    self.startButton.loc = (200 ,350, 400, 400)
+    self.startButton.loc = (200 ,350, 200, 50)
 
     self.startAIButton = copy.copy(btemplate)
     self.startAIButton.text = "START WITH AI"
-    self.startAIButton.loc = (200 ,450, 400, 500)
+    self.startAIButton.loc = (200 ,450, 200, 50)
 
     self.leaderButton = copy.copy(btemplate)
     self.leaderButton.text = "LEADERBOARD"
-    self.leaderButton.loc = (200 ,550, 400, 600)
+    self.leaderButton.loc = (200 ,550, 200, 50)
 
     # Pause screen assets
 
     self.unpausebtn = copy.copy(btemplate)
-    self.unpausebtn.loc = (200 ,450, 400, 500)
+    self.unpausebtn.loc = (200 ,450, 200, 50)
     self.unpausebtn.text = "UNPAUSE"
 
     self.backbtn = copy.copy(btemplate)
     self.backbtn.text = "BACK TO MENU"
 
     self.pauseLabel = Label(loc=(200 ,250, 400, 300), display = display, text = "PAUSED", textcolor=(255,255,255), textsize=20)
+  
+    # Lose screen assets
+
+    self.loseLabel = Label(display = self.display, loc = (0, 100, self.display.get_width(), 100), text = "GAME OVER", textcolor=(255,255,255), textsize=50)
+    self.namelabel = Label(display = self.display, loc = (0, 200, self.display.get_width(), 200), text = "Enter your name", textcolor=(255,255,255), textsize=25)
+    self.nameinput = InputBox(display = self.display, x = 125,y=300,w=350,h=50, textcolor = (255,255,255), color=(0,0,0),bordercolor=(255,255,255), bordersize=5, activecolor=(10,10,10), maxlen=13, fontsize=35)
+    self.submitScore = copy.copy(btemplate)
+    self.submitScore.text = "Submit Score"
+    self.submitScore.loc = (200 ,400, 200, 50)
 
   def mainmenu(self):
     for event in pygame.event.get():  
@@ -134,6 +143,33 @@ class Game():
       self.backbtn.render()
       self.pauseLabel.render()
 
+  def lose(self):
+    for event in pygame.event.get():  
+      if event.type == pygame.QUIT:
+        pygame.quit()
+      elif event.type == pygame.MOUSEBUTTONDOWN:
+
+        if(self.submitScore.isHovering(pygame.mouse.get_pos())):
+          self.submitScore.func(False,State.MAIN)
+          self.reset()
+        
+        self.nameinput.handleClick(pygame.mouse.get_pos())
+      
+      elif event.type == pygame.KEYDOWN:
+        if(self.nameinput.active):
+          if(event.key == pygame.K_RETURN):
+            self.reset()
+          elif(event.key == pygame.K_BACKSPACE):
+            self.nameinput.text = self.nameinput.text[:len(self.nameinput.text) - 1]
+          else:
+            self.nameinput.handleType(event.unicode)
+
+    # Render
+    self.loseLabel.render()
+    self.namelabel.render()
+    self.nameinput.render()
+    self.submitScore.render()
+
   def triggerlose(self):
     self.state = State.LOSE
 
@@ -149,12 +185,18 @@ class Game():
   def gameloop(self):
     while True:
       self.display.fill((0,0,0))
+      
       # Gameplay
-      if(self.state in [State.LOSE, State.GAME, State.PAUSED]):
+      if(self.state in [State.GAME, State.PAUSED]):
         self.game()
+      
       # MAIN MENU
       elif(self.state == State.MAIN) or self.state == State.LEADERBOARD:
         self.mainmenu()
+      
+      elif(self.state == State.LOSE):
+        self.lose()
+      
       pygame.display.flip()
 
 def main():

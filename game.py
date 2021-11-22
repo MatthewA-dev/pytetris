@@ -12,6 +12,7 @@ pieces = pieceFile.read().split("\n;\n")
 pieceFile.close()
 p = []
 color = []
+
 for i, piece in enumerate(pieces[::-1]):
   if(i % 2 == 0):
     color = [int(x) for x in piece.split(", ")]
