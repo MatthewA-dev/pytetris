@@ -1,12 +1,14 @@
 import pygame
 import copy
 import enum
+import csv
+import os
+import traceback #TODO remove
 from game import Board, AI, Score
-from rendering import Button, Label, InputBox
+from rendering import Button, Label, InputBox, Table
 
 pygame.init()
 pygame.font.init()
-
 
 
 class State(enum.Enum):
@@ -23,7 +25,17 @@ class Game():
     self.reset()
     self.state = State.MAIN
     self.font = pygame.font.Font('assets/Minecraftia.ttf', 20)
+    self.scores = []
 
+    # load scores
+    if(not os.path.exists("scores.csv")):
+      open("scores.csv","w")
+    else:
+      with open('scores.csv', newline='') as csvfile:
+        spamreader = csv.reader(csvfile, quotechar='|')
+        for row in spamreader:
+          self.scores.append(row)
+    print(self.scores)
     btemplate = Button(display = self.display, loc = (200 ,350, 200, 50),color = (0,0,0), hovercolor=(50,50,50), bordersize=3, bordercolor=(255,255,255), func=self.setState, text = "START", textcolor=(255,255,255), textsize=20)
     # Main menu assets
 
@@ -62,10 +74,17 @@ class Game():
     self.submitScore.text = "Submit Score"
     self.submitScore.loc = (200 ,400, 200, 50)
 
+    # Leaderboard
+
+    self.leaderbackbtn = copy.copy(btemplate)
+    self.leaderbackbtn.text = "BACK"
+    self.leaderbackbtn.loc = (200, 600, 200, 50)
+    #self.leaderscore = Table(bordercolor=(255,255,255),display = self.display, loc = (100,100,300,600), color = (0,0,0), bordersize=5, textcolor = (255,255,255), titles=["Name","Level", "Points"], sizes=[[100,100,100],50], textsize=10,gridsize=[3,10])
+
   def mainmenu(self):
     for event in pygame.event.get():  
       if event.type == pygame.QUIT:
-        pygame.quit()
+        self.quit()
       elif event.type == pygame.MOUSEBUTTONDOWN:
         # Deal with clicks on buttons
         if(self.state == State.MAIN):
@@ -91,7 +110,7 @@ class Game():
     # game loop
     for event in pygame.event.get():
       if event.type == pygame.QUIT:
-        pygame.quit()
+        self.quit()
       # Deal with menu clicks
       elif event.type == pygame.MOUSEBUTTONDOWN:
         # Deal with clicks on buttons
@@ -146,10 +165,11 @@ class Game():
   def lose(self):
     for event in pygame.event.get():  
       if event.type == pygame.QUIT:
-        pygame.quit()
+        self.quit()
       elif event.type == pygame.MOUSEBUTTONDOWN:
 
         if(self.submitScore.isHovering(pygame.mouse.get_pos())):
+          self.scores.append([self.nameinput.text, self.board.level, self.board.score.score])
           self.submitScore.func(False,State.MAIN)
           self.reset()
         
@@ -173,6 +193,29 @@ class Game():
   def triggerlose(self):
     self.state = State.LOSE
 
+  def quit(self):
+    with open('scores.csv', 'w', newline='') as csvfile:
+      w = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+      for score in self.scores:
+        w.writerow(score)
+    pygame.quit()
+
+  def key(self,element):
+    return int(element[3])
+
+  def leaderboard(self):
+    for event in pygame.event.get():  
+      if event.type == pygame.QUIT:
+        self.quit()
+      elif event.type == pygame.MOUSEBUTTONDOWN:
+
+        if(self.leaderbackbtn.isHovering(pygame.mouse.get_pos())):
+          self.leaderbackbtn.func(False, State.MAIN)
+    
+    # Render
+    self.leaderbackbtn.render()
+    #self.leaderscore.render()
+
   def setState(self, aiVal, state):
     self.hasAI = aiVal
     self.state = state
@@ -191,18 +234,25 @@ class Game():
         self.game()
       
       # MAIN MENU
-      elif(self.state == State.MAIN) or self.state == State.LEADERBOARD:
+      elif(self.state == State.MAIN):
         self.mainmenu()
       
       elif(self.state == State.LOSE):
         self.lose()
+      
+      elif(self.state == State.LEADERBOARD):
+        self.leaderboard()
       
       pygame.display.flip()
 
 def main():
   display = pygame.display.set_mode([600,800])
   game = Game(display=display)
-  game.gameloop()
+  try:
+    game.gameloop()
+  except Exception as e:
+    print(traceback.format_exc())
+    game.quit()
   
 
 if( __name__ == "__main__"):
