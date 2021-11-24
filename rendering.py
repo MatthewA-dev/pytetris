@@ -103,34 +103,49 @@ class InputBox:
 
 
 class Table():
-  def __init__(self, display, loc, color, bordersize, bordercolor, textcolor, textsize, gridsize, titles, sizes):
-    self.loc = loc
+  def __init__(self, display, loc, color, bordersize, bordercolor, cellborder,textcolor, textsize, gridsize, titles, sizes):
+    self.x = loc[0]
+    self.y = loc[1]
+    self.w = loc[2]
+    self.h = loc[3]
     self.color = color
     self.bordersize = bordersize
     self.bordercolor = bordercolor
+    self.cellborder = cellborder
     self.textcolor = textcolor
     self.font = pygame.font.Font('assets/Minecraftia.ttf', textsize)
+    self.textsize = textsize
     self.display = display
-    self.x = gridsize[0]
-    self.y = gridsize[1]
+    self.cellx = gridsize[0]
+    self.celly = gridsize[1]
     self.titles = titles
     self.data = []
     # index 0 is widths for every cell, index 1 is height
-    self.sizes = sizes
-  
+    self.cellheight = sizes[1]
+    self.cellwidths = sizes[0]
+  def sortkey(self, element):
+    return int(element[2])
   def render(self):
     # Draw border
-    pygame.draw.rect(self.display, (255,255,255), pygame.Rect(self.loc[0] - self.bordersize, self.loc[1] - self.bordersize, self.loc[2] + self.bordersize*2, self.loc[3] + self.bordersize*2),border_radius=10)
+    pygame.draw.rect(self.display, self.bordercolor, pygame.Rect(self.x - self.bordersize, self.y - self.bordersize, self.w + self.bordersize*2, self.h + self.bordersize*2),border_radius=10)
     # Draw middle
-    r = pygame.Rect(self.loc[0], self.loc[1], self.loc[2], self.loc[3])
+    r = pygame.Rect(self.x, self.y, self.w, self.h)
     pygame.draw.rect(surface=self.display,color=self.color,rect = r,border_radius=10)
-    for i, element in enumerate(self.titles + self.data):
-      pygame.draw.rect(self.display, (255,255,255), pygame.Rect(self.loc[0] - self.bordersize, self.loc[1] - self.bordersize, self.loc[2] + self.bordersize*2, self.loc[3] + self.bordersize*2),border_radius=10)
-      # Draw middle
-      r = pygame.Rect(self.loc[0] + sum(self.sizes[:i % self.x]), self.loc[1] + self.sizes[1] * (i // 3), self.sizes[i % self.x], self.sizes[1])
-    # for i, element in enumerate(self.titles + self.data):
-    #   text = self.font.render(element, False, self.textcolor)
-    #   # Center the text
-    #   x = ((self.sizes[0][i % self.x + 1]) // 2) - (text.get_rect().width // 2)
-    #   y = (self.sizes[1] // 2) - (text.get_rect().height // 2)
-    #   self.display.blit(text, (sum(self.sizes[0][:i % self.x + 1]) + x, self.sizes[1]*(i % self.x) + y))
+    for y, row in enumerate([self.titles] + sorted(self.data, key = self.sortkey, reverse = True)):
+      for x, element in enumerate(row):
+        if(y > self.celly):
+          return
+        
+        # Draw border
+        cell = pygame.Rect(self.x + sum(self.cellwidths[:x]), self.y + (self.cellheight * y), self.cellwidths[x], self.cellheight)
+        pygame.draw.rect(self.display, self.bordercolor, cell)
+        
+        # Draw cells
+        cell.x += self.cellborder
+        cell.y += self.cellborder
+        cell.width -= self.cellborder*2
+        cell.height -= self.cellborder*2
+        
+        pygame.draw.rect(self.display, self.color, cell)
+        words = Label(display=self.display, loc = (cell.x, cell.y,cell.x + cell.width, + cell.y + cell.height), text = str(element), textcolor = (255,255,255), textsize = self.textsize)
+        words.render()

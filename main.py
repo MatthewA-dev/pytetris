@@ -35,7 +35,6 @@ class Game():
         spamreader = csv.reader(csvfile, quotechar='|')
         for row in spamreader:
           self.scores.append(row)
-    print(self.scores)
     btemplate = Button(display = self.display, loc = (200 ,350, 200, 50),color = (0,0,0), hovercolor=(50,50,50), bordersize=3, bordercolor=(255,255,255), func=self.setState, text = "START", textcolor=(255,255,255), textsize=20)
     # Main menu assets
 
@@ -53,6 +52,10 @@ class Game():
     self.leaderButton = copy.copy(btemplate)
     self.leaderButton.text = "LEADERBOARD"
     self.leaderButton.loc = (200 ,550, 200, 50)
+    
+    self.quitButton = copy.copy(btemplate)
+    self.quitButton.text = "QUIT"
+    self.quitButton.loc = (200, 650, 200, 50)
 
     # Pause screen assets
 
@@ -75,11 +78,25 @@ class Game():
     self.submitScore.loc = (200 ,400, 200, 50)
 
     # Leaderboard
-
+    
+    self.leaderLabel = Label(display = self.display, loc = (0, 50, self.display.get_width(), 50), text = "LEADERBOARD", textcolor=(255,255,255), textsize=20)
     self.leaderbackbtn = copy.copy(btemplate)
     self.leaderbackbtn.text = "BACK"
-    self.leaderbackbtn.loc = (200, 600, 200, 50)
-    #self.leaderscore = Table(bordercolor=(255,255,255),display = self.display, loc = (100,100,300,600), color = (0,0,0), bordersize=5, textcolor = (255,255,255), titles=["Name","Level", "Points"], sizes=[[100,100,100],50], textsize=10,gridsize=[3,10])
+    self.leaderbackbtn.loc = (200, 650, 200, 50)
+    self.leaderscore = Table(cellborder = 2,bordercolor=(255,255,255),display = self.display, loc = (100,100,400,500), color = (0,0,0), bordersize=5, textcolor = (255,255,255), titles=["Name","Level", "Points"], sizes=[[150,100,150],50], textsize=15 ,gridsize=[3,10])
+    self.leaderscore.data = self.scores
+
+    # Game Things
+    
+    self.leftcontrolLabels = []
+    self.leftcontrolLabels.append(Label(display = self.display, loc = (20, 310, 100, 300), text = "Z = Rotate Left", textcolor=(255,255,255), textsize=12))
+    self.leftcontrolLabels.append(Label(display = self.display, loc = (20, 330, 100, 320), text = "X = Rotate Right", textcolor=(255,255,255), textsize=12))
+    self.rightcontrolLabels = []
+    self.rightcontrolLabels.append(Label(display = self.display, loc = (460, 300, 600, 300), text = "Left = Move Left", textcolor=(255,255,255), textsize=12))
+    self.rightcontrolLabels.append(Label(display = self.display, loc = (460, 320, 600, 320), text = "Right = Move Right", textcolor=(255,255,255), textsize=12))
+    self.rightcontrolLabels.append(Label(display = self.display, loc = (460, 340, 600, 340), text = "Down = HardDrop", textcolor=(255,255,255), textsize=12))
+    
+
 
   def mainmenu(self):
     for event in pygame.event.get():  
@@ -94,6 +111,8 @@ class Game():
             self.startAIButton.func(True, State.GAME)
           elif self.leaderButton.isHovering(pygame.mouse.get_pos()):
             self.startAIButton.func(False, State.LEADERBOARD)
+          elif self.quitButton.isHovering(pygame.mouse.get_pos()):
+            self.quit()
         elif(self.state== State.LEADERBOARD):
           pass
     
@@ -103,6 +122,7 @@ class Game():
       self.startAIButton.render()
       self.leaderButton.render()
       self.display.blit(self.logo,(100,50))
+      self.quitButton.render()
     elif(self.state == State.LEADERBOARD):
       pass
 
@@ -150,12 +170,14 @@ class Game():
         self.ai.tick()
       self.board.tick()
 
+    for x in self.leftcontrolLabels:
+      x.render()
+    for x in self.rightcontrolLabels:
+      x.render()
+    
     # Render menus
     if(self.state == State.GAME):
       self.board.render()
-    elif(self.state == State.LOSE):
-      # Render lose
-      pass
     elif(self.state == State.PAUSED):
       self.board.score.render()
       self.unpausebtn.render()
@@ -214,7 +236,8 @@ class Game():
     
     # Render
     self.leaderbackbtn.render()
-    #self.leaderscore.render()
+    self.leaderscore.render()
+    self.leaderLabel.render()
 
   def setState(self, aiVal, state):
     self.hasAI = aiVal
@@ -250,8 +273,8 @@ def main():
   game = Game(display=display)
   try:
     game.gameloop()
-  except Exception as e:
-    print(traceback.format_exc())
+  except BaseException:
+    #print(traceback.format_exc())
     game.quit()
   
 
