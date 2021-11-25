@@ -200,6 +200,8 @@ class Game():
       elif event.type == pygame.KEYDOWN:
         if(self.nameinput.active):
           if(event.key == pygame.K_RETURN):
+            self.scores.append([self.nameinput.text, self.board.level, self.board.score.score])
+            self.submitScore.func(False,State.MAIN)
             self.reset()
           elif(event.key == pygame.K_BACKSPACE):
             self.nameinput.text = self.nameinput.text[:len(self.nameinput.text) - 1]

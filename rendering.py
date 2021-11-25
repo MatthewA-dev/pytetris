@@ -133,7 +133,7 @@ class Table():
     pygame.draw.rect(surface=self.display,color=self.color,rect = r,border_radius=10)
     for y, row in enumerate([self.titles] + sorted(self.data, key = self.sortkey, reverse = True)):
       for x, element in enumerate(row):
-        if(y > self.celly):
+        if(y > self.celly - 1):
           return
         
         # Draw border

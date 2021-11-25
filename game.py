@@ -139,10 +139,9 @@ class AI():
       if(self.board.checkDead(grid)):
         return 100*(getHoleCount(grid)*3 + getHeight(grid)*(1/10) + getBoardDif(grid)/2)
     #return (getHoleCount(grid)*2 + getBoardDif(grid)/5) / (getHeight(grid) / 20 + 1) + 2*(getHeight(grid))
-    if(getHeight(grid) <= 10):
-    	return getHoleCount(grid)*3 + getHeight(grid)*(1/10) + getBoardDif(grid)/2
-    else:
-        return getHoleCount(grid)*3 + getHeight(grid)*3 + getBoardDif(grid)/2
+    #print(math.log(getHoleCount(grid) + 1) + 2)
+    #return math.log(getHoleCount(grid) + 1) + 2 + getHeight(grid)*3 + getBoardDif(grid)/2
+    return math.e**getHoleCount(grid) + 2 + getHeight(grid)*3 + getBoardDif(grid)/2
 
   def tick(self):
     if(time.time() - self.board.lastTime > self.board.fallspeed):
