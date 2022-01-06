@@ -268,10 +268,12 @@ class Game():
       elif(self.state == State.LEADERBOARD):
         self.leaderboard()
       
+      
+
       pygame.display.flip()
 
 def main():
-  display = pygame.display.set_mode([600,800])
+  display = pygame.display.set_mode([600,800], pygame.SCALED | pygame.FULLSCREEN)
   game = Game(display=display)
   try:
     game.gameloop()
